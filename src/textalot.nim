@@ -4,6 +4,7 @@
 
 
 import posix,strutils,Termios
+import unicode
 
 #Event Mouse 
 
@@ -230,7 +231,7 @@ type
   Cell = object
     bg:uint32
     fg:uint32
-    ch:char=' '
+    ch:string=" "
     style:uint16=STYLE_NONE # Style attributes (Bold, Underline, etc.)
   Buffer = object 
     width :int
@@ -241,7 +242,7 @@ proc newBuffer(w,h:int) :Buffer =
   result.width=w
   result.height=h
   result.data=newSeq[Cell](w*h)
-  var defaultCell=Cell(bg: BG_COLOR_DEFAULT, fg: FG_COLOR_DEFAULT, ch:' ')
+  var defaultCell=Cell(bg: BG_COLOR_DEFAULT, fg: FG_COLOR_DEFAULT, ch:" ")
 
   for i in 0..w*h-1 :
     result.data[i]=defaultCell
@@ -270,6 +271,8 @@ proc initTextalot*() =
   setupSignalHandler() #Catching resize events
   enableMouseTracking()
   clearScreen()
+  
+  
 
 proc deinitTextalot*() =
     showCursor()
@@ -358,7 +361,7 @@ proc texalotRender*() =
         lastStyle = backCell.style
 
 
-      output.add($backCell.ch)
+      output.add(backCell.ch)
 
       # 2. Update the Front Buffer:
       # Copy the changed cell from back to front, so they match for the next frame
@@ -378,32 +381,35 @@ proc drawText*(text:string,x,y:int,fg,bg:uint32,style:uint16=STYLE_NONE) =
 
   if currentY < 0 or currentY >= h:
     return
-  for ch in text:
+  for ch in text.runes:
     if currentX >= 0 and currentX < w:
       let index = currentY * w + currentX
       textalotBackBuffer.data[index] = Cell(
-        ch: ch,
+        ch: ch.toUTF8(),
         fg: fg,
         bg: bg,
         style:style
       )
     currentX+=1
 
-proc drawChar*(x, y: int, ch: char, fg, bg: uint32,style:uint16=STYLE_NONE) =
+proc drawChar*(x, y: int, ch: string, fg, bg: uint32,style:uint16=STYLE_NONE) =
   let w = textalotBackBuffer.width
   let h = textalotBackBuffer.height
 
+
   if x >= 0 and x < w and y >= 0 and y < h:
     let index = y * w + x
+
+    var fch=if ch=="" : " " else : ch
     
     textalotBackBuffer.data[index] = Cell(
-      ch: ch,
+      ch: fch.runeAt(0).toUTF8(),
       fg: fg,
       bg: bg,
       style:style
     )
 
-proc drawRectangle*(x1,y1,x2,y2:int,bg,fg:uint32,ch:char=' ',style:uint16=STYLE_NONE) =
+proc drawRectangle*(x1,y1,x2,y2:int,bg,fg:uint32,ch:string=" ",style:uint16=STYLE_NONE) =
   let startX = min(x1, x2)
   let endX = max(x1, x2)
   let startY = min(y1, y2)
@@ -412,7 +418,9 @@ proc drawRectangle*(x1,y1,x2,y2:int,bg,fg:uint32,ch:char=' ',style:uint16=STYLE_
   let w = textalotBackBuffer.width
   let h = textalotBackBuffer.height
 
-  let fillCell = Cell(bg: bg, fg: fg, ch: ch,style:style)
+  var fch=if ch=="" : " " else : ch
+
+  let fillCell = Cell(bg: bg, fg: fg, ch: fch.runeAt(0).toUTF8(),style:style)
 
   for y in startY..endY:
     for x in startX..endX:
@@ -422,7 +430,7 @@ proc drawRectangle*(x1,y1,x2,y2:int,bg,fg:uint32,ch:char=' ',style:uint16=STYLE_
 
 
 proc removeArea*(x1,y1,x2,y2:int) =
-  drawRectangle(x1,y1,x2,y2,BG_COLOR_DEFAULT,FG_COLOR_DEFAULT,' ')
+  drawRectangle(x1,y1,x2,y2,BG_COLOR_DEFAULT,FG_COLOR_DEFAULT," ")
 
 
 

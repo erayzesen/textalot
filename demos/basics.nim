@@ -32,6 +32,7 @@ while true:
 
     # Display the application title (Bold, White text on Yellow background).
     drawText("TEXTALOT", 2, 3, FG_COLOR_WHITE, BG_COLOR_YELLOW, STYLE_BOLD)
+    drawText("♥", 12, 3, FG_COLOR_RED, BG_COLOR_DEFAULT)
     
     # Draw a horizontal separator line.
     drawText("_________________________________", 2, 4, FG_COLOR_CYAN, BG_COLOR_DEFAULT)
@@ -86,7 +87,7 @@ while true:
         elif mouseEvent.key == EVENT_MOUSE_LEFT:
             drawText("- Mouse clicked - x:" & $mouseEvent.x & " y:" & $mouseEvent.y, 4, 10, FG_COLOR_WHITE, BG_COLOR_DEFAULT)
             
-            drawChar(mouseEvent.x, mouseEvent.y, '?', FG_COLOR_WHITE, BG_COLOR_MAGENTA)
+            drawChar(mouseEvent.x, mouseEvent.y, "?", FG_COLOR_WHITE, BG_COLOR_MAGENTA)
             
     elif texalotEvent of KeyEvent:
         var keyEvent = KeyEvent(texalotEvent)
