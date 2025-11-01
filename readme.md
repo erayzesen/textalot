@@ -6,6 +6,8 @@
 
 **textalot** is the no-nonsense Terminal I/O and TUI Engine, written entirely in Nim, specifically optimized for POSIX systems (Linux, macOS, etc.). It’s the muscle and mind for your terminal application, delivering high-speed, flicker-free rendering and rock-solid event handling. Minimal code, maximum performance.
 
+![textalot](media/sample.png)
+
 ## Overview
 Textalot is the focused, highly efficient little engine for your TUI. While it won't hand you pre-built widgets or menus, it manages the critical terminal mechanics: handling events (keyboard, mouse, resize) instantly and ensuring flicker-free rendering using an intelligent screen buffer. It’s the simple, fast, and native foundation in Nim that allows you to focus purely on your application logic.
 
@@ -35,7 +37,7 @@ Integrating Textalot is as simple as it gets. Designed to be the reliable bedroc
 import os
 import textalot
  ```
- ![textalot](media/sample.png)
+ 
  3. A basic textalot application loop is shown below. This foundational structure handles initialization, the continuous event/render loop, and a clean shutdown.
 ```nim 
 import textalot, os
