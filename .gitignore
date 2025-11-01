@@ -1,0 +1,56 @@
+# ==============================
+# Nim / Nimble project .gitignore
+# ==============================
+
+# === Build artifacts ===
+# Compiled binaries and libraries
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+
+# === Nim build cache ===
+# Directory created by the Nim compiler for intermediate files
+nimcache/
+
+# === Build output directories ===
+# Common folders for build outputs or binaries
+build/
+bin/
+dist/
+obj/
+
+# === Nimble files ===
+# Lock file created by Nimble (can be regenerated)
+*.nimble.lock
+
+# === Logs / temporary files ===
+# General temporary or log files
+*.log
+*.tmp
+*.bak
+
+# === Editor / IDE settings ===
+# VSCode, JetBrains IDEs, Sublime, etc.
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# === OS / file manager junk ===
+# macOS and Windows metadata files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Test / coverage artifacts ===
+# Temporary folders created by test runs
+coverage/
+test_output/
+reports/
+
+# === Miscellaneous ===
+# Backup files created by editors or diff tools
+*~
+
