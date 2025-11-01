@@ -1,7 +1,4 @@
 
-![textalot](media/textalot_logo.png)
-
-
 ***Hey, that's a lot of text here!***
 
 **textalot** is the no-nonsense Terminal I/O and TUI Engine, written entirely in Nim, specifically optimized for POSIX systems (Linux, macOS, etc.). It’s the muscle and mind for your terminal application, delivering high-speed, flicker-free rendering and rock-solid event handling. Minimal code, maximum performance.
