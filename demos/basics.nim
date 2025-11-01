@@ -27,7 +27,7 @@ initTextalot()
 
 while true:
     # Update: Reads input events (Key, Mouse, Resize) and performs differential rendering.
-    updateTexalot()
+    updateTextalot()
 
 
     # Display the application title (Bold, White text on Yellow background).

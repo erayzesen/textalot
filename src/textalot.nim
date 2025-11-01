@@ -80,10 +80,6 @@ const
 
 
 
-
-
-
-
 #Terminal Foreground Colors 
 const
   FG_COLOR_BLACK*:uint32=30
@@ -630,7 +626,7 @@ proc readEvent(): Event =
 
 ### UPDATE ###
 var texalotEvent*:Event=NoneEvent()
-proc updateTexalot*() =
+proc updateTextalot*() =
   texalotEvent=readEvent() # Update Events
   texalotRender() #Update Render
   if texalotEvent of ResizeEvent :

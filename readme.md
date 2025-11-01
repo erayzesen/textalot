@@ -1,4 +1,9 @@
-**textalot** is the no-nonsense Terminal I/O and TUI Engine, written entirely in Nim. It’s the muscle and mind for your terminal application, delivering high-speed, flicker-free rendering and rock-solid event handling on POSIX systems. Minimal code, maximum performance.
+
+![textalot](media/textalot_logo.png)
+
+***Hey, that's a lot of text here!***
+
+**textalot** is the no-nonsense Terminal I/O and TUI Engine, written entirely in Nim, specifically optimized for POSIX systems (Linux, macOS, etc.). It’s the muscle and mind for your terminal application, delivering high-speed, flicker-free rendering and rock-solid event handling. Minimal code, maximum performance.
 
 ## Overview
 Textalot is the focused, highly efficient little engine for your TUI. While it won't hand you pre-built widgets or menus, it manages the critical terminal mechanics: handling events (keyboard, mouse, resize) instantly and ensuring flicker-free rendering using an intelligent screen buffer. It’s the simple, fast, and native foundation in Nim that allows you to focus purely on your application logic.
@@ -47,7 +52,7 @@ initTextalot()
 
 while true:
     # Update: Reads input events (Key, Mouse, Resize) and performs differential rendering.
-    updateTexalot()
+    updateTextalot()
 
 
     # Display the application title (Bold, White text on Yellow background).
@@ -109,3 +114,19 @@ while true:
     # Introduce a small sleep to limit the CPU usage and control the frame rate (~100 FPS)
     os.sleep(10) 
  ```
+
+### API
+
+We don't need a whole separate page—textalot is simple. Everything this library offers is right here.
+
+| Function/Variable | Description |
+| :---- | :---- |
+| initTextalot() | **The absolute must-have.** Initializes the terminal for TUI mode (enables raw mode, hides cursor, and sets up buffers). Always call this at the start of your application. |
+| deinitTextalot() | **The Terminal Savior.** Restores the terminal to its original state before exiting the application (shows the cursor, restores raw mode, and disables mouse tracking). This must be called at the end of your program to prevent a corrupted terminal session. |
+| updateTexalot() | **Must be called at the beginning of every loop iteration.** This is crucial as it handles both reading input events and performing the differential screen rendering for that cycle. |
+| textalotEvent | After updateTexalot() is called, this global variable holds the event that occurred during that step. You check this variable to perform event-driven logic. It can be a NoneEvent, MouseEvent, KeyEvent, or ResizeEvent. 
+| drawText(text:string, x:int, y:int, fgColor:uint32, bgColor:uint32, style:uint16) | Prints a string at the given position (x, y) using the specified foreground color, background color, and style. |
+| drawRectangle(x1:int, y1:int, x2:int, y2:int, fgColor:uint32, bgColor:uint32, ch:char, style:uint16) | Fills a rectangular area defined by two corners (x1, y1 to x2, y2) using a specific character and given colors/styles. Useful for drawing UI elements or clearing areas. |
+| drawChar(x:int, y: int, ch: char, fg:uint32, bg: uint32, style:uint16) | Draws a single character at the specified coordinates and updates the cell's properties (color, style) in the back buffer. |
+| getTerminalWidth() | Returns the current width (number of columns) of the terminal window. |
+| getTerminalHeight() | Returns the current height (number of rows) of the terminal window. |
