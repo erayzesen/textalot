@@ -1,5 +1,5 @@
 
-![textalot](media/sample.png)
+![textalot](media/textalot_logo.png)
 
 
 ***Hey, that's a lot of text here!***
@@ -24,6 +24,8 @@ Textalot is the focused, highly efficient little engine for your TUI. While it w
 
 * Bare Metal Primitives: Offers direct drawText, drawChar, and drawRectangle functions for complete control over your application's canvas. You are the pixel master here.
 
+
+
 ## Usage / Getting Started
 Integrating Textalot is as simple as it gets. Designed to be the reliable bedrock, you can drop it into your Nim project and start drawing immediately.
 
@@ -33,6 +35,7 @@ Integrating Textalot is as simple as it gets. Designed to be the reliable bedroc
 import os
 import textalot
  ```
+ ![textalot](media/sample.png)
  3. A basic textalot application loop is shown below. This foundational structure handles initialization, the continuous event/render loop, and a clean shutdown.
 ```nim 
 import textalot, os
