@@ -1,5 +1,6 @@
 
-![textalot](media/textalot_logo.png)
+![textalot](media/sample.png)
+
 
 ***Hey, that's a lot of text here!***
 
