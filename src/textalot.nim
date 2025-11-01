@@ -422,8 +422,8 @@ proc drawRectangle*(x1,y1,x2,y2:int,bg,fg:uint32,ch:string=" ",style:uint16=STYL
 
   let fillCell = Cell(bg: bg, fg: fg, ch: fch.runeAt(0).toUTF8(),style:style)
 
-  for y in startY..endY:
-    for x in startX..endX:
+  for y in startY..<endY:
+    for x in startX..<endX:
       if x >= 0 and x < w and y >= 0 and y < h:
         let index = y * w + x
         textalotBackBuffer.data[index] = fillCell
