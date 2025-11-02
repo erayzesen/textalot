@@ -289,89 +289,132 @@ proc getMoveCursorCode(x,y:int):string =
   return "\x1b[" & $y & ";" & $x & "H"
 
 
-var lastFg: uint32 = FG_COLOR_DEFAULT
-var lastBg: uint32 = BG_COLOR_DEFAULT
-var lastStyle: uint16 = STYLE_NONE
-
 proc texalotRender*() =
   ## Compares the front and back buffers and draws only the differences to the terminal.
-  ## This reduces screen flickering and improves performance.
+  ## This uses targeted SGR (Select Graphic Rendition)
 
-  # Ensure buffers have the same dimensions before proceeding
-  # If dimensions mismatch, something went wrong, or terminal size changed (needs resize handling)
+  # Guard against buffer size mismatches
   if textalotBackBuffer.width != textalotFrontBuffer.width or 
     textalotBackBuffer.height != textalotFrontBuffer.height:
     return
     
   let bufferSize = textalotBackBuffer.data.len
 
-  # Use a StringBuilder or collect data to write in bulk for better terminal performance
+  # Use a StringBuilder for a single, efficient write
   var output = ""
-  var appliedReset = false
+
+  # State tracking variables for optimization (Last applied state)
+  # NOTE: These variables must be global or scoped correctly for persistent state
+  var lastFg: uint32 = FG_COLOR_DEFAULT
+  var lastBg: uint32 = BG_COLOR_DEFAULT
+  var lastStyle: uint16 = STYLE_NONE
 
   # Iterate over every cell in the buffer
   for i in 0..<bufferSize:
     let backCell = textalotBackBuffer.data[i]
     let frontCell = textalotFrontBuffer.data[i]
 
-    # 1. Check if the cell content is different (bg, fg, or character)
+    # 1. Check if the cell content is different (content, color, or style changed)
     if backCell.bg != frontCell.bg or 
         backCell.fg != frontCell.fg or 
         backCell.ch != frontCell.ch or
         backCell.style != frontCell.style :
       
       # The cell has changed, we need to draw it.
-      
 
-      # Calculate the (x, y) coordinates from the flat index 'i'
+      # Calculate coordinates (x, y)
       let x = i mod textalotBackBuffer.width
       let y = i div textalotBackBuffer.width
 
-      #Move cursor
+      # Move Cursor
       output.add(getMoveCursorCode(x+1,y+1) )
 
-      #Handle Attribute/Style Changes
-      if backCell.fg != lastFg or backCell.bg != lastBg or backCell.style != lastStyle:
-        if not appliedReset or backCell.style == STYLE_NONE:
-            # Reset all SGR attributes (Color and Style) to ensure a clean start
-            output.add("\x1b[0m")
-            appliedReset = true
-        else:
-            appliedReset = false
+      # 2. Handle Style Changes (Targeted Reset and Activation)
+      if backCell.style != lastStyle:
+        # A. Targeted Style Reset: Turn off styles that are no longer requested.
         
-        output.add("\x1b[" & $backCell.fg & ";" & $backCell.bg & "m")
+        # SGR 22: Normal intensity/turn off Bold (and Brightness effect)
+        if (lastStyle and STYLE_BOLD) != 0 and (backCell.style and STYLE_BOLD) == 0:
+            output.add("\x1b[22m")
+        # SGR 24: Turn off Underline
+        if (lastStyle and STYLE_UNDERLINE) != 0 and (backCell.style and STYLE_UNDERLINE) == 0:
+            output.add("\x1b[24m")
+        # SGR 23: Turn off Italic
+        if (lastStyle and STYLE_ITALIC) != 0 and (backCell.style and STYLE_ITALIC) == 0:
+            output.add("\x1b[23m")
+        # SGR 25: Turn off Blink
+        if (lastStyle and STYLE_BLINK) != 0 and (backCell.style and STYLE_BLINK) == 0:
+            output.add("\x1b[25m")
+        # SGR 27: Turn off Reverse
+        if (lastStyle and STYLE_REVERSE) != 0 and (backCell.style and STYLE_REVERSE) == 0:
+            output.add("\x1b[27m")
+        # SGR 29: Turn off Strike
+        if (lastStyle and STYLE_STRIKE) != 0 and (backCell.style and STYLE_STRIKE) == 0:
+            output.add("\x1b[29m")
 
-        if (backCell.style and STYLE_BOLD) != 0:
+
+        # B. Style Activation: Turn on styles that are newly requested.
+        
+        # SGR 1: Bold
+        if (backCell.style and STYLE_BOLD) != 0 and (lastStyle and STYLE_BOLD) == 0:
             output.add("\x1b[1m") 
-        if (backCell.style and STYLE_FAINT) != 0:
+        # SGR 2: Faint
+        if (backCell.style and STYLE_FAINT) != 0 and (lastStyle and STYLE_FAINT) == 0:
             output.add("\x1b[2m") 
-        if (backCell.style and STYLE_ITALIC) != 0:
+        # SGR 3: Italic
+        if (backCell.style and STYLE_ITALIC) != 0 and (lastStyle and STYLE_ITALIC) == 0:
             output.add("\x1b[3m") 
-        if (backCell.style and STYLE_UNDERLINE) != 0:
+        # SGR 4: Underline
+        if (backCell.style and STYLE_UNDERLINE) != 0 and (lastStyle and STYLE_UNDERLINE) == 0:
             output.add("\x1b[4m")
-        if (backCell.style and STYLE_BLINK) != 0:
+        # SGR 5: Blink
+        if (backCell.style and STYLE_BLINK) != 0 and (lastStyle and STYLE_BLINK) == 0:
             output.add("\x1b[5m") 
-        if (backCell.style and STYLE_REVERSE) != 0:
+        # SGR 7: Reverse
+        if (backCell.style and STYLE_REVERSE) != 0 and (lastStyle and STYLE_REVERSE) == 0:
             output.add("\x1b[7m")
-        if (backCell.style and STYLE_STRIKE) != 0:
+        # SGR 9: Strike
+        if (backCell.style and STYLE_STRIKE) != 0 and (lastStyle and STYLE_STRIKE) == 0:
             output.add("\x1b[9m") 
+        
+        lastStyle = backCell.style
+      
+      # 3. Handle Color Changes (Only send codes if colors actually changed)
+      if backCell.fg != lastFg or backCell.bg != lastBg:
+        
+        var colorCode = "\x1b["
+
+        # Foreground (FG) Color: Use 39m (Reset FG) or new color
+        if backCell.fg == FG_COLOR_DEFAULT:
+            colorCode.add("39") # SGR 39: Reset FG to default
+        else:
+            colorCode.add($backCell.fg)
+        
+        colorCode.add(";") # Separator
+        
+        # Background (BG) Color: Use 49m (Reset BG) or new color
+        if backCell.bg == BG_COLOR_DEFAULT:
+            colorCode.add("49") # SGR 49: Reset BG to default
+        else:
+            colorCode.add($backCell.bg)
+
+        colorCode.add("m")
+        output.add(colorCode)
 
         lastFg = backCell.fg
         lastBg = backCell.bg
-        lastStyle = backCell.style
 
-
+      # 4. Write Character
       output.add(backCell.ch)
 
-      # 2. Update the Front Buffer:
+      # 5. Update the Front Buffer
       # Copy the changed cell from back to front, so they match for the next frame
       textalotFrontBuffer.data[i] = backCell 
 
-  # Finally, perform a single write to the terminal for efficiency
+  # Final write and flush
   stdout.write(output) 
-
-  # Flush the output to ensure it's displayed immediately
   stdout.flushFile()
+
 
 proc drawText*(text:string,x,y:int,fg,bg:uint32,style:uint16=STYLE_NONE) =
   let w = textalotBackBuffer.width

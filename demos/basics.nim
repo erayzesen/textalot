@@ -93,7 +93,7 @@ while true:
         var keyEvent = KeyEvent(texalotEvent)
         removeArea(4, 11, 64, 11)
         
-        drawText("- Key pressed - key:" & $Rune(keyEvent.key), 4, 11, FG_COLOR_WHITE, BG_COLOR_DEFAULT)
+        drawText("- Key pressed - key:" & $Rune(keyEvent.key), 4, 11, FG_COLOR_WHITE, BG_COLOR_DEFAULT) #We're using Rune type for unicode character support.
         
     elif texalotEvent of ResizeEvent:
         removeArea(4, 12, 64, 12)
