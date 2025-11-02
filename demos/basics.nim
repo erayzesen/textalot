@@ -8,7 +8,7 @@
 # Description: A comprehensive example demonstrating the core features of the Textalot TUI Backend/Engine,
 # including drawing text/shapes with various styles and colors, and handling input events.
 
-import textalot, os
+import textalot, os, unicode
   
 # --- Cleanup and Initialization ---
 
@@ -93,7 +93,7 @@ while true:
         var keyEvent = KeyEvent(texalotEvent)
         removeArea(4, 11, 64, 11)
         
-        drawText("- Key pressed - key:" & $chr(keyEvent.key), 4, 11, FG_COLOR_WHITE, BG_COLOR_DEFAULT)
+        drawText("- Key pressed - key:" & $Rune(keyEvent.key), 4, 11, FG_COLOR_WHITE, BG_COLOR_DEFAULT)
         
     elif texalotEvent of ResizeEvent:
         removeArea(4, 12, 64, 12)

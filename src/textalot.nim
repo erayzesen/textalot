@@ -581,7 +581,7 @@ proc readEvent(): Event =
     of 0x1F: key = EVENT_KEY_CTRL_7
     of 0x20: key = EVENT_KEY_SPACE
     of 0x7F: key = EVENT_KEY_BACKSPACE
-    else: key = uint32(s[0].ord)  # normal character
+    else: key = uint32(s.runeAt(0).ord)  # normal character
 
   # --- Multi-byte escape sequences ---
   elif s.startsWith("\x1b"):
@@ -620,6 +620,11 @@ proc readEvent(): Event =
       else: discard
     else:
       key = EVENT_KEY_ESC  # single ESC press
+  elif n > 1:
+    try:
+        key = uint32(s.toRunes()[0].ord)
+    except:
+        discard
 
   # 5. Return the Key Event if successfully parsed
   if key != EVENT_KEY_NONE:
