@@ -8,7 +8,7 @@
 # Description: A comprehensive example demonstrating the core features of the Textalot TUI Backend/Engine,
 # including drawing text/shapes with various styles and colors, and handling input events.
 
-import textalot, os, unicode
+import ../textalot, os, unicode
   
 # --- Cleanup and Initialization ---
 

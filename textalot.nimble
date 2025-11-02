@@ -1,12 +1,8 @@
-# Package
-
+# textalot.nimble
 version       = "0.1.0"
-author        = "Eray Zesen"
-description   = "A High-Performance TUI Backend/Engine"
+author        = "ErayZesen <erayzesen@gmail.com>"
+description   = "A High-Performance Terminal I/O & TUI Engine written in Nim"
 license       = "MIT"
-srcDir        = "src"
-
-
-# Dependencies
-
-requires "nim >= 2.2.4"
+srcDir        = "" 
+bin           = @[]
+requires      = @[]
