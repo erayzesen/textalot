@@ -79,7 +79,7 @@ while true:
 
     if texalotEvent of MouseEvent:
         var mouseEvent = MouseEvent(texalotEvent)
-        removeArea(4, 10, 64, 10) 
+        removeArea(4, 10, 64, 11) 
 
         if mouseEvent.key == EVENT_MOUSE_MOVE:
             drawText("- Mouse moving - x:" & $mouseEvent.x & " y:" & $mouseEvent.y, 4, 10, FG_COLOR_WHITE, BG_COLOR_DEFAULT)
@@ -94,6 +94,9 @@ while true:
         removeArea(4, 11, 64, 11)
         
         drawText("- Key pressed - key:" & $Rune(keyEvent.key), 4, 11, FG_COLOR_WHITE, BG_COLOR_DEFAULT) #We're using Rune type for unicode character support.
+        if keyEvent.key==EVENT_KEY_ENTER:
+            onExit()
+            break
         
     elif texalotEvent of ResizeEvent:
         removeArea(4, 12, 64, 12)

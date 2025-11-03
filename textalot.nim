@@ -38,7 +38,6 @@ const
   EVENT_KEY_ENTER*: uint16 = 11
   EVENT_KEY_CTRL_K*: uint16 = 12
   EVENT_KEY_CTRL_L*: uint16 = 13
-  EVENT_KEY_CTRL_M*: uint16 = 14
   EVENT_KEY_CTRL_N*: uint16 = 15
   EVENT_KEY_CTRL_O*: uint16 = 16
   EVENT_KEY_CTRL_P*: uint16 = 17
@@ -479,18 +478,13 @@ proc dequeue(): Event =
 
 # ---Main Non-blocking Reader ---
 proc readEvent*(): Event =
-  ## Non-blocking event reader that supports multiple ESC sequences and modifier bits.
-
-  # 0. If the queue is not empty, return the next one
   if eventQueue.len > 0:
     return dequeue()
 
-  # Resize checking
   if isResized:
     isResized = false
     return new(ResizeEvent)
 
-  #  Non-blocking STDIN check
   var readfds: TFdSet
   FD_ZERO(readfds)
   FD_SET(STDIN_FILENO, readfds)
@@ -502,7 +496,6 @@ proc readEvent*(): Event =
   if sel <= 0:
     return new(NoneEvent)
 
-  # Reading
   var buf = newString(256)
   let n = read(STDIN_FILENO, buf[0].addr, buf.len)
   if n <= 0:
@@ -510,20 +503,17 @@ proc readEvent*(): Event =
 
   var s = buf[0 ..< n]
 
-  # ESC Sequence Parsing Loop
   while s.len > 0:
     var parsed = false
+    var key: uint32 = EVENT_KEY_NONE
 
-    # ------------------------------
-    # SGR Mouse (ESC [ < Cb ; Cx ; Cy M/m)
-    # ------------------------------
+    # --- SGR Mouse ---
     if s.startsWith("\x1b[<"):
       let endPos = s.find({'M','m'})
       if endPos > 0:
         let seq = s[3 ..< endPos]
         let finalKind = s[endPos]
         let parts = seq.split(';')
-        
         if parts.len >= 3:
           let cb = parseInt(parts[0])
           let cx = parseInt(parts[1]) - 1
@@ -555,33 +545,15 @@ proc readEvent*(): Event =
             else: EVENT_MOUSE_MOVE
           else:
             case button
-            of 0:
-              if finalKind == 'M':
-                ev.key = EVENT_MOUSE_LEFT
-              else:
-                ev.key = EVENT_MOUSE_RELEASE
-            of 1:
-              if finalKind == 'M':
-                ev.key = EVENT_MOUSE_MIDDLE
-              else:
-                ev.key = EVENT_MOUSE_RELEASE
-            of 2:
-              if finalKind == 'M':
-                ev.key = EVENT_MOUSE_RIGHT
-              else:
-                ev.key = EVENT_MOUSE_RELEASE
-            else:
-              ev.key = EVENT_MOUSE_NONE
-
+            of 0: ev.key = if finalKind == 'M': EVENT_MOUSE_LEFT else: EVENT_MOUSE_RELEASE
+            of 1: ev.key = if finalKind == 'M': EVENT_MOUSE_MIDDLE else: EVENT_MOUSE_RELEASE
+            of 2: ev.key = if finalKind == 'M': EVENT_MOUSE_RIGHT else: EVENT_MOUSE_RELEASE
+            else: ev.key = EVENT_MOUSE_NONE
           enqueue(ev)
-
-      
-        s = s[endPos + 1 .. ^1]
+        s = s[endPos+1 .. ^1]
         parsed = true
-
-    # ------------------------------
-    # X10 Mouse (ESC [ M CB X Y)
-    # ------------------------------
+    
+    # --- X10 Mouse ---
     elif s.len >= 6 and s.startsWith("\x1b[M"):
       let cb = ord(s[3]) - 32
       let x = ord(s[4]) - 33
@@ -599,102 +571,115 @@ proc readEvent*(): Event =
       s = s[6..^1]
       parsed = true
 
-    # ------------------------------
-    # Key Events (Single-byte / ESC sequences)
-    # ------------------------------
-    elif s.len > 0:
-      var key: uint32 = EVENT_KEY_NONE
-      if s.len == 1:
-        case ord(s[0])
-        of 0x00: key = EVENT_KEY_CTRL_TILDE
-        of 0x01: key = EVENT_KEY_CTRL_A
-        of 0x02: key = EVENT_KEY_CTRL_B
-        of 0x03: key = EVENT_KEY_CTRL_C
-        of 0x04: key = EVENT_KEY_CTRL_D
-        of 0x05: key = EVENT_KEY_CTRL_E
-        of 0x06: key = EVENT_KEY_CTRL_F
-        of 0x07: key = EVENT_KEY_CTRL_G
-        of 0x08: key = EVENT_KEY_BACKSPACE
-        of 0x09: key = EVENT_KEY_TAB
-        of 0x0A: key = EVENT_KEY_ENTER
-        of 0x0B: key = EVENT_KEY_CTRL_K
-        of 0x0C: key = EVENT_KEY_CTRL_L
-        of 0x0D: key = EVENT_KEY_CTRL_M
-        of 0x0E: key = EVENT_KEY_CTRL_N
-        of 0x0F: key = EVENT_KEY_CTRL_O
-        of 0x10: key = EVENT_KEY_CTRL_P
-        of 0x11: key = EVENT_KEY_CTRL_Q
-        of 0x12: key = EVENT_KEY_CTRL_R
-        of 0x13: key = EVENT_KEY_CTRL_S
-        of 0x14: key = EVENT_KEY_CTRL_T
-        of 0x15: key = EVENT_KEY_CTRL_U
-        of 0x16: key = EVENT_KEY_CTRL_V
-        of 0x17: key = EVENT_KEY_CTRL_W
-        of 0x18: key = EVENT_KEY_CTRL_X
-        of 0x19: key = EVENT_KEY_CTRL_Y
-        of 0x1A: key = EVENT_KEY_CTRL_Z
-        of 0x1B: key = EVENT_KEY_ESC
-        of 0x1C: key = EVENT_KEY_CTRL_4
-        of 0x1D: key = EVENT_KEY_CTRL_5
-        of 0x1E: key = EVENT_KEY_CTRL_6
-        of 0x1F: key = EVENT_KEY_CTRL_7
-        of 0x20: key = EVENT_KEY_SPACE
-        of 0x7F: key = EVENT_KEY_BACKSPACE
-        else: key = uint32(s.runeAt(0).ord)
-        s = s[1..^1]
-        parsed = true
-      elif s.startsWith("\x1b"):
-        if s.len >= 3 and s[1] == '[':
+    # --- Single-byte keys / Ctrl keys ---
+    elif s.len == 1:
+      case ord(s[0])
+      of 0x00: key = EVENT_KEY_CTRL_TILDE
+      of 0x01: key = EVENT_KEY_CTRL_A
+      of 0x02: key = EVENT_KEY_CTRL_B
+      of 0x03: key = EVENT_KEY_CTRL_C
+      of 0x04: key = EVENT_KEY_CTRL_D
+      of 0x05: key = EVENT_KEY_CTRL_E
+      of 0x06: key = EVENT_KEY_CTRL_F
+      of 0x07: key = EVENT_KEY_CTRL_G
+      of 0x08, 0x7F: key = EVENT_KEY_BACKSPACE
+      of 0x09: key = EVENT_KEY_TAB
+      of 0x0A, 0x0D: key = EVENT_KEY_ENTER
+      of 0x0B: key = EVENT_KEY_CTRL_K
+      of 0x0C: key = EVENT_KEY_CTRL_L
+      of 0x0E: key = EVENT_KEY_CTRL_N
+      of 0x0F: key = EVENT_KEY_CTRL_O
+      of 0x10: key = EVENT_KEY_CTRL_P
+      of 0x11: key = EVENT_KEY_CTRL_Q
+      of 0x12: key = EVENT_KEY_CTRL_R
+      of 0x13: key = EVENT_KEY_CTRL_S
+      of 0x14: key = EVENT_KEY_CTRL_T
+      of 0x15: key = EVENT_KEY_CTRL_U
+      of 0x16: key = EVENT_KEY_CTRL_V
+      of 0x17: key = EVENT_KEY_CTRL_W
+      of 0x18: key = EVENT_KEY_CTRL_X
+      of 0x19: key = EVENT_KEY_CTRL_Y
+      of 0x1A: key = EVENT_KEY_CTRL_Z
+      of 0x1B: key = EVENT_KEY_ESC
+      of 0x1C: key = EVENT_KEY_CTRL_4
+      of 0x1D: key = EVENT_KEY_CTRL_5
+      of 0x1E: key = EVENT_KEY_CTRL_6
+      of 0x1F: key = EVENT_KEY_CTRL_7
+      of 0x20: key = EVENT_KEY_SPACE
+      else: key = uint32(s.toRunes()[0].ord)
+      s = s[1..^1]
+      parsed = true
+
+    # --- ESC sequences (arrows, F keys, Home/End, Insert/Delete, PgUp/PgDn) ---
+    elif s.startsWith("\x1b"):
+      if s.len >= 3 and s[1] == '[':
+        if s[2] in {'A','B','C','D','H','F'}:
           case s[2]
           of 'A': key = EVENT_KEY_ARROW_UP
           of 'B': key = EVENT_KEY_ARROW_DOWN
           of 'C': key = EVENT_KEY_ARROW_RIGHT
           of 'D': key = EVENT_KEY_ARROW_LEFT
-          of '1':
-            if s.len >= 5 and s[4] == '~':
-              case s[3]
-              of '1': key = EVENT_KEY_HOME
-              of '2': key = EVENT_KEY_INSERT
-              of '3': key = EVENT_KEY_DELETE
-              of '4': key = EVENT_KEY_END
-              of '5': key = EVENT_KEY_PGUP
-              of '6': key = EVENT_KEY_PGDN
-              else: discard
-            else: discard
+          of 'H': key = EVENT_KEY_HOME        
+          of 'F': key = EVENT_KEY_END 
           else: discard
-          s = s[min(s.len,5)..^1]
-          parsed = true
-        elif s.len >= 2 and s[1] == 'O':
-          case s[2]
-          of 'P': key = EVENT_KEY_F1
-          of 'Q': key = EVENT_KEY_F2
-          of 'R': key = EVENT_KEY_F3
-          of 'S': key = EVENT_KEY_F4
-          of 't': key = EVENT_KEY_F5
-          of 'u': key = EVENT_KEY_F6
-          of 'v': key = EVENT_KEY_F7
-          of 'w': key = EVENT_KEY_F8
-          of 'x': key = EVENT_KEY_F9
-          of 'y': key = EVENT_KEY_F10
-          of 'z': key = EVENT_KEY_F11
-          of 'a': key = EVENT_KEY_F12
-          else: discard
-          s = s[min(s.len,3)..^1]
+          s = s[3 .. ^1]
           parsed = true
         else:
-          key = EVENT_KEY_ESC
-          s = s[1..^1]
-          parsed = true
+          let endTilde = s.find('~')
+          if endTilde >= 0:
+            case s[2..endTilde-1]
+            of "1": key = EVENT_KEY_HOME
+            of "2": key = EVENT_KEY_INSERT
+            of "3": key = EVENT_KEY_DELETE
+            of "4": key = EVENT_KEY_END
+            of "5": key = EVENT_KEY_PGUP
+            of "6": key = EVENT_KEY_PGDN
+            of "15": key = EVENT_KEY_F5
+            of "17": key = EVENT_KEY_F6
+            of "18": key = EVENT_KEY_F7
+            of "19": key = EVENT_KEY_F8
+            of "20": key = EVENT_KEY_F9
+            of "21": key = EVENT_KEY_F10
+            of "23": key = EVENT_KEY_F11
+            of "24": key = EVENT_KEY_F12
+            else: discard
+            s = s[endTilde+1 .. ^1]
+            parsed = true
+      elif s.len >= 3 and s[1] == 'O':
+        case s[2]
+        of 'P': key = EVENT_KEY_F1
+        of 'Q': key = EVENT_KEY_F2
+        of 'R': key = EVENT_KEY_F3
+        of 'S': key = EVENT_KEY_F4
+        else: discard
+        s = s[3..^1]
+        parsed = true
+      else:
+        key = EVENT_KEY_ESC
+        s = s[1..^1]
+        parsed = true
 
-      if key != EVENT_KEY_NONE:
-        let ev = new(KeyEvent)
-        ev.key = key
-        enqueue(ev)
+    # --- Unicode / multi-byte UTF-8 fallback ---
+    else:
+      if s[0] != '\x1b':
+        try:
+          let firstRune = s.toRunes()[0]
+          if firstRune.ord >= 0x20 and firstRune.ord <= 0x10FFFF:
+            key = uint32(firstRune.ord)
+            let runeByteLen = firstRune.toUTF8.len
+            s = s[min(runeByteLen, s.len)..^1]
+            parsed = true
+        except:
+          discard
+
+    if key != EVENT_KEY_NONE:
+      let ev = new(KeyEvent)
+      ev.key = key
+      enqueue(ev)
 
     if not parsed:
       s = s[1..^1]
 
-  # Return the first event of the queue 
   if eventQueue.len > 0:
     return dequeue()
   else:
