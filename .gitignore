@@ -9,6 +9,7 @@
 *.so
 *.dylib
 *.out
+textalot
 
 # === Nim build cache ===
 # Directory created by the Nim compiler for intermediate files
@@ -24,6 +25,8 @@ obj/
 # === Nimble files ===
 # Lock file created by Nimble (can be regenerated)
 *.nimble.lock
+nimbledeps/
+deps/
 
 # === Logs / temporary files ===
 # General temporary or log files
